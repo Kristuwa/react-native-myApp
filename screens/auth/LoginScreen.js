@@ -53,6 +53,7 @@ export default function LoginScreen({ navigation }) {
     Keyboard.dismiss();
     setState(initialState);
     console.log(state);
+    navigation.navigate("Home");
   };
 
   return (

@@ -57,6 +57,7 @@ export default function RegistrationScreen({ navigation }) {
     Keyboard.dismiss();
     setState(initialState);
     console.log(state);
+    navigation.navigate("Home");
   };
 
   return (

@@ -1,10 +1,10 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
-export default function CreatePostsScreen() {
+export default function CommentsScreen() {
   return (
     <View style={styles.container}>
-      <Text>CreatePostsScreen</Text>
+      <Text>CommentsScreen</Text>
     </View>
   );
 }

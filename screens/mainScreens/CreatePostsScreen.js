@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -10,35 +10,73 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
+  Platform,
+  Button,
 } from "react-native";
+import "react-native-get-random-values";
 import { AntDesign } from "@expo/vector-icons";
-import { MaterialIcons, EvilIcons } from "@expo/vector-icons";
-import { Camera, CameraType } from "expo-camera";
+import { MaterialIcons } from "@expo/vector-icons";
+import { Camera } from "expo-camera";
+import { nanoid } from "nanoid";
+import * as Location from "expo-location";
 
 const initialState = {
   location: "",
-  nameLocation: "",
+  name: "",
   photo: null,
+  comments: 0,
 };
 
 export default function CreatePostsScreen({ navigation }) {
-  const [state, setState] = useState(initialState);
-  const { location, nameLocation } = state;
+  const [hasPermission, setHasPermission] = useState(null);
+  const [isCameraReady, setIsCameraReady] = useState(false);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
   const [camera, setCamera] = useState(null);
-  const [photo, setPhoto] = useState("");
-  console.log(photo);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [state, setState] = useState(initialState);
+  const { location, name, photo } = state;
+  const cameraRef = useRef();
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(status === "granted");
+    })();
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setErrorMsg("Permission to access location was denied");
+        return;
+      }
+    })();
+  }, []);
+
+  let locationText = "Waiting..";
+  if (errorMsg) {
+    locationText = errorMsg;
+  } else if (locationText) {
+    locationText = JSON.stringify(location);
+  }
+
+  const onCameraReady = () => {
+    setIsCameraReady(true);
+  };
 
   const onFocus = () => {
     setIsShowKeyboard(true);
   };
 
-  const keyboardHideSubmitForm = () => {
+  const keyboardHideSubmitForm = async () => {
     setIsShowKeyboard(false);
     Keyboard.dismiss();
+    let locationCoords = await Location.getCurrentPositionAsync({});
+    setState((prevState) => ({
+      ...prevState,
+      location: `${locationCoords.coords.latitude}, ${locationCoords.coords.longitude}`,
+    }));
+    navigation.navigate("DefaultScreenPosts", { state });
     setState(initialState);
-    console.log(state);
-    //  navigation.navigate("PostsScreen");
   };
 
   const keyboardHide = () => {
@@ -47,9 +85,37 @@ export default function CreatePostsScreen({ navigation }) {
   };
 
   const takePicture = async () => {
-    const photoImg = await camera.takePictureAsync();
-    setPhoto(photoImg.uri);
+    //  const photoImg = await camera.takePictureAsync();
+    //  console.log("photo", photoImg);
+    //  setState((prevState) => ({
+    //    ...prevState,
+    //    photo: photoImg.uri,
+    //    id: nanoid(),
+    //  }));
+    if (cameraRef.current) {
+      const options = { quality: 0.5, base64: true, skipProcessing: true };
+      const data = await cameraRef.current.takePictureAsync(options);
+      const source = data.uri;
+      if (source) {
+        await cameraRef.current.pausePreview();
+        setIsPreview(true);
+        setState((prevState) => ({
+          ...prevState,
+          photo: source,
+          id: nanoid(),
+        }));
+        console.log("picture", source);
+      }
+    }
   };
+
+  const cancelPreview = async () => {
+    await cameraRef.current.resumePreview();
+    setIsPreview(false);
+    setVideoSource(null);
+  };
+
+  const createNewPost = location === "" || name === "" || photo === "";
 
   return (
     <TouchableWithoutFeedback onPress={keyboardHide}>
@@ -57,7 +123,7 @@ export default function CreatePostsScreen({ navigation }) {
         <View style={styles.topContainer}>
           <TouchableOpacity
             onPress={() => {
-              navigation.navigate("PostsScreen");
+              navigation.navigate("DefaultScreenPosts");
             }}
           >
             <AntDesign
@@ -70,29 +136,34 @@ export default function CreatePostsScreen({ navigation }) {
           <Text style={styles.textTop}>Создать публикацию</Text>
         </View>
         <View style={styles.mainContainer}>
-          <Camera style={styles.addPhoto} ref={setCamera}>
+          <Camera
+            style={styles.addPhoto}
+            ref={cameraRef}
+            onCameraReady={onCameraReady}
+          >
             {photo && (
-              <View style={styles.imageBackground}>
-                <Image source={{ uri: photo }} />
+              <View style={styles.imageContainerBackground}>
+                <Image style={styles.imageBackground} source={{ uri: photo }} />
               </View>
             )}
             <TouchableOpacity style={styles.photoIcon} onPress={takePicture}>
               <MaterialIcons name="photo-camera" size={24} color="#BDBDBD" />
             </TouchableOpacity>
           </Camera>
-          <Text style={styles.textBottom}>Загрузите фото</Text>
-          <View
-            style={{
-              ...styles.form,
-            }}
-          >
+          {photo ? (
+            <Text style={styles.textBottom}>Редактировать фото</Text>
+          ) : (
+            <Text style={styles.textBottom}>Загрузите фото</Text>
+          )}
+          <View style={styles.form}>
             <TextInput
               style={styles.input}
               onChangeText={(value) =>
-                setState((prevState) => ({ ...prevState, location: value }))
+                setState((prevState) => ({ ...prevState, name: value }))
               }
-              value={nameLocation}
+              value={name}
               placeholder="Название..."
+              placeholderColor="#BDBDBD"
               onFocus={onFocus}
             />
 
@@ -101,7 +172,7 @@ export default function CreatePostsScreen({ navigation }) {
               onChangeText={(value) =>
                 setState((prevState) => ({
                   ...prevState,
-                  password: value,
+                  location: value,
                 }))
               }
               value={location}
@@ -110,10 +181,15 @@ export default function CreatePostsScreen({ navigation }) {
             />
           </View>
           <TouchableOpacity
-            style={styles.btnAddScreen}
+            style={
+              createNewPost ? styles.btnAddScreen : styles.btnAddScreenActive
+            }
             onPress={keyboardHideSubmitForm}
+            disabled={createNewPost}
           >
-            <Text style={styles.btnText}>Опубликовать</Text>
+            <Text style={createNewPost ? styles.btnText : { color: "#ffffff" }}>
+              Опубликовать
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -150,7 +226,7 @@ const styles = StyleSheet.create({
   addPhoto: {
     position: "relative",
     width: Dimensions.get("window").width - 16 * 2,
-    height: 343,
+    height: 240,
     backgroundColor: "#F6F6F6",
 
     marginTop: 32,
@@ -161,11 +237,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  imageBackground: {
+  imageBackground: { width: "100%", height: "100%" },
+  imageContainerBackground: {
     position: "absolute",
     top: 0,
     left: 0,
-    width: 240,
+    width: 343,
     height: 240,
   },
   photoIcon: {
@@ -192,11 +269,19 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E8E8E8",
     backgroundColor: "#ffffff",
     marginBottom: 47,
-    color: "#BDBDBD",
+    color: "#212121",
     fontSize: 16,
   },
   btnAddScreen: {
     backgroundColor: "#F6F6F6",
+    borderRadius: 100,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingBottom: 16,
+    paddingTop: 16,
+  },
+  btnAddScreenActive: {
+    backgroundColor: "#FF6C00",
     borderRadius: 100,
     justifyContent: "center",
     alignItems: "center",

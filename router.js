@@ -7,10 +7,10 @@ import {
 } from "@expo/vector-icons";
 import { View, Platform, StyleSheet } from "react-native";
 import PostsScreen from "./screens/mainScreens/PostsScreen";
-import CreatePostsScreen from "./screens/mainScreens/CreatePostsScreen";
 import ProfileScreen from "./screens/mainScreens/ProfileScreen";
 import RegistrationScreen from "./screens/auth/RegistrationScreen";
 import LoginScreen from "./screens/auth/LoginScreen";
+import CreatePostsScreen from "./screens/mainScreens/CreatePostsScreen";
 
 const AuthStack = createNativeStackNavigator();
 const MainTab = createBottomTabNavigator();

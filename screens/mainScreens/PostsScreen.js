@@ -14,13 +14,13 @@ import imageTwo from "../../assets/imagePost-02.jpg";
 import { EvilIcons } from "@expo/vector-icons";
 
 const posts = [
-  //   {
-  //     id: "1",
-  //     photo: imageOne,
-  //     name: "Лес",
-  //     comments: 0,
-  //     location: "Ivano-Frankivs'k Region, Ukraine",
-  //   },
+  {
+    id: "1",
+    photo: imageOne,
+    name: "Лес",
+    comments: 0,
+    location: "Ivano-Frankivs'k Region, Ukraine",
+  },
   {
     id: "2",
     photo: imageTwo,

@@ -6,19 +6,28 @@ import {
   TouchableOpacity,
   Dimensions,
   TextInput,
+  Image,
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import { MaterialIcons, EvilIcons } from "@expo/vector-icons";
+import { Camera, CameraType } from "expo-camera";
 
 const initialState = {
   location: "",
   nameLocation: "",
+  photo: null,
 };
 
 export default function CreatePostsScreen({ navigation }) {
   const [state, setState] = useState(initialState);
   const { location, nameLocation } = state;
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
+  const [camera, setCamera] = useState(null);
+  const [photo, setPhoto] = useState("");
+  console.log(photo);
 
   const onFocus = () => {
     setIsShowKeyboard(true);
@@ -32,62 +41,83 @@ export default function CreatePostsScreen({ navigation }) {
     //  navigation.navigate("PostsScreen");
   };
 
+  const keyboardHide = () => {
+    setIsShowKeyboard(false);
+    Keyboard.dismiss();
+  };
+
+  const takePicture = async () => {
+    const photoImg = await camera.takePictureAsync();
+    setPhoto(photoImg.uri);
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.topContainer}>
-        <TouchableOpacity
-          onPress={() => {
-            navigation.navigate("PostsScreen");
-          }}
-        >
-          <AntDesign name="arrowleft" size={24} color="rgba(33, 33, 33, 0.8)" />
-        </TouchableOpacity>
+    <TouchableWithoutFeedback onPress={keyboardHide}>
+      <ScrollView style={styles.container}>
+        <View style={styles.topContainer}>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate("PostsScreen");
+            }}
+          >
+            <AntDesign
+              name="arrowleft"
+              size={24}
+              color="rgba(33, 33, 33, 0.8)"
+            />
+          </TouchableOpacity>
 
-        <Text style={styles.textTop}>Создать публикацию</Text>
-      </View>
-      <View style={styles.mainContainer}>
-        <View style={styles.addPhoto}>
-          <View style={styles.photoIcon}>
-            <MaterialIcons name="photo-camera" size={24} color="#BDBDBD" />
+          <Text style={styles.textTop}>Создать публикацию</Text>
+        </View>
+        <View style={styles.mainContainer}>
+          <Camera style={styles.addPhoto} ref={setCamera}>
+            {photo && (
+              <View style={styles.imageBackground}>
+                <Image source={{ uri: photo }} />
+              </View>
+            )}
+            <TouchableOpacity style={styles.photoIcon} onPress={takePicture}>
+              <MaterialIcons name="photo-camera" size={24} color="#BDBDBD" />
+            </TouchableOpacity>
+          </Camera>
+          <Text style={styles.textBottom}>Загрузите фото</Text>
+          <View
+            style={{
+              ...styles.form,
+            }}
+          >
+            <TextInput
+              style={styles.input}
+              onChangeText={(value) =>
+                setState((prevState) => ({ ...prevState, location: value }))
+              }
+              value={nameLocation}
+              placeholder="Название..."
+              onFocus={onFocus}
+            />
+
+            <TextInput
+              style={{ ...styles.input, marginBottom: 32 }}
+              onChangeText={(value) =>
+                setState((prevState) => ({
+                  ...prevState,
+                  password: value,
+                }))
+              }
+              value={location}
+              placeholder="Местность..."
+              onFocus={onFocus}
+            />
           </View>
+          <TouchableOpacity
+            style={styles.btnAddScreen}
+            onPress={keyboardHideSubmitForm}
+          >
+            <Text style={styles.btnText}>Опубликовать</Text>
+          </TouchableOpacity>
         </View>
-        <Text style={styles.textBottom}>Загрузите фото</Text>
-        <View
-          style={{
-            ...styles.form,
-          }}
-        >
-          <TextInput
-            style={styles.input}
-            onChangeText={(value) =>
-              setState((prevState) => ({ ...prevState, location: value }))
-            }
-            value={nameLocation}
-            placeholder="Название..."
-            onFocus={onFocus}
-          />
-
-          <TextInput
-            style={{ ...styles.input, marginBottom: 32 }}
-            onChangeText={(value) =>
-              setState((prevState) => ({
-                ...prevState,
-                password: value,
-              }))
-            }
-            value={location}
-            placeholder="Местность..."
-            onFocus={onFocus}
-          />
-        </View>
-        <TouchableOpacity
-          style={styles.btnAddScreen}
-          onPress={keyboardHideSubmitForm}
-        >
-          <Text style={styles.btnText}>Опубликовать</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      </ScrollView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -118,8 +148,9 @@ const styles = StyleSheet.create({
     color: "#212121",
   },
   addPhoto: {
+    position: "relative",
     width: Dimensions.get("window").width - 16 * 2,
-    height: 240,
+    height: 343,
     backgroundColor: "#F6F6F6",
 
     marginTop: 32,
@@ -129,6 +160,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
+  },
+  imageBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: 240,
+    height: 240,
   },
   photoIcon: {
     width: 60,

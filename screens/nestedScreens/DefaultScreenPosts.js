@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SimpleLineIcons, EvilIcons } from "@expo/vector-icons";
 import photo from "../../assets/photo.jpg";
+import { LogOut } from "../../redux/auth/authOperation";
 
 // function Item({ photo, location, name, comments, navigation }) {
 //   return (
@@ -65,7 +66,7 @@ export default function DefaultScreenPosts({ route, navigation }) {
         <Text style={styles.textTop}>Публикации</Text>
         <TouchableOpacity
           onPress={() => {
-            navigation.navigate("Home");
+            LogOut();
           }}
         >
           <SimpleLineIcons

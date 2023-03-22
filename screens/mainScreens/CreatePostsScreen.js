@@ -17,7 +17,7 @@ import "react-native-get-random-values";
 import { AntDesign } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Camera } from "expo-camera";
-import { nanoid } from "nanoid";
+import { v4 as uuidv4 } from "uuid";
 import * as Location from "expo-location";
 
 const initialState = {
@@ -25,6 +25,7 @@ const initialState = {
   name: "",
   photo: null,
   comments: 0,
+  id: "",
 };
 
 export default function CreatePostsScreen({ navigation }) {
@@ -32,7 +33,6 @@ export default function CreatePostsScreen({ navigation }) {
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
-  const [camera, setCamera] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [state, setState] = useState(initialState);
   const { location, name, photo } = state;
@@ -67,7 +67,7 @@ export default function CreatePostsScreen({ navigation }) {
     setIsShowKeyboard(true);
   };
 
-  const keyboardHideSubmitForm = async () => {
+  const submitPublicForm = async () => {
     setIsShowKeyboard(false);
     Keyboard.dismiss();
     let locationCoords = await Location.getCurrentPositionAsync({});
@@ -77,6 +77,7 @@ export default function CreatePostsScreen({ navigation }) {
     }));
     navigation.navigate("DefaultScreenPosts", { state });
     setState(initialState);
+    cancelPreview();
   };
 
   const keyboardHide = () => {
@@ -85,13 +86,6 @@ export default function CreatePostsScreen({ navigation }) {
   };
 
   const takePicture = async () => {
-    //  const photoImg = await camera.takePictureAsync();
-    //  console.log("photo", photoImg);
-    //  setState((prevState) => ({
-    //    ...prevState,
-    //    photo: photoImg.uri,
-    //    id: nanoid(),
-    //  }));
     if (cameraRef.current) {
       const options = { quality: 0.5, base64: true, skipProcessing: true };
       const data = await cameraRef.current.takePictureAsync(options);
@@ -102,18 +96,17 @@ export default function CreatePostsScreen({ navigation }) {
         setState((prevState) => ({
           ...prevState,
           photo: source,
-          id: nanoid(),
+          id: uuidv4(),
         }));
-        console.log("picture", source);
       }
     }
   };
 
-  const cancelPreview = async () => {
+  async function cancelPreview() {
     await cameraRef.current.resumePreview();
     setIsPreview(false);
     setVideoSource(null);
-  };
+  }
 
   const createNewPost = location === "" || name === "" || photo === "";
 
@@ -124,6 +117,7 @@ export default function CreatePostsScreen({ navigation }) {
           <TouchableOpacity
             onPress={() => {
               navigation.navigate("DefaultScreenPosts");
+              setState((prevState) => ({ ...prevState, photo: null }));
             }}
           >
             <AntDesign
@@ -136,20 +130,40 @@ export default function CreatePostsScreen({ navigation }) {
           <Text style={styles.textTop}>Создать публикацию</Text>
         </View>
         <View style={styles.mainContainer}>
-          <Camera
-            style={styles.addPhoto}
-            ref={cameraRef}
-            onCameraReady={onCameraReady}
-          >
-            {photo && (
-              <View style={styles.imageContainerBackground}>
+          <View>
+            {photo ? (
+              <View style={styles.addPhoto}>
                 <Image style={styles.imageBackground} source={{ uri: photo }} />
+                <TouchableOpacity
+                  style={styles.photoIcon}
+                  onPress={takePicture}
+                >
+                  <MaterialIcons
+                    name="photo-camera"
+                    size={24}
+                    color="#BDBDBD"
+                  />
+                </TouchableOpacity>
               </View>
+            ) : (
+              <Camera
+                style={styles.addPhoto}
+                ref={cameraRef}
+                onCameraReady={onCameraReady}
+              >
+                <TouchableOpacity
+                  style={styles.photoIcon}
+                  onPress={takePicture}
+                >
+                  <MaterialIcons
+                    name="photo-camera"
+                    size={24}
+                    color="#BDBDBD"
+                  />
+                </TouchableOpacity>
+              </Camera>
             )}
-            <TouchableOpacity style={styles.photoIcon} onPress={takePicture}>
-              <MaterialIcons name="photo-camera" size={24} color="#BDBDBD" />
-            </TouchableOpacity>
-          </Camera>
+          </View>
           {photo ? (
             <Text style={styles.textBottom}>Редактировать фото</Text>
           ) : (
@@ -184,7 +198,7 @@ export default function CreatePostsScreen({ navigation }) {
             style={
               createNewPost ? styles.btnAddScreen : styles.btnAddScreenActive
             }
-            onPress={keyboardHideSubmitForm}
+            onPress={submitPublicForm}
             disabled={createNewPost}
           >
             <Text style={createNewPost ? styles.btnText : { color: "#ffffff" }}>
@@ -215,6 +229,7 @@ const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     marginHorizontal: 16,
+    position: "relative",
   },
   textTop: {
     marginLeft: 63,
@@ -224,11 +239,10 @@ const styles = StyleSheet.create({
     color: "#212121",
   },
   addPhoto: {
-    position: "relative",
     width: Dimensions.get("window").width - 16 * 2,
     height: 240,
     backgroundColor: "#F6F6F6",
-
+    position: "relative",
     marginTop: 32,
     marginBottom: 8,
     borderWidth: 1,
@@ -237,12 +251,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  imageBackground: { width: "100%", height: "100%" },
-  imageContainerBackground: {
+  imageBackground: {
     position: "absolute",
     top: 0,
     left: 0,
-    width: 343,
+    width: "100%",
     height: 240,
   },
   photoIcon: {

@@ -14,11 +14,14 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import image from "../../assets/register-bg.jpg";
+import { useDispatch } from "react-redux";
+import { signIn } from "../../redux/auth/authOperation";
 
 const initialState = {
   email: "",
   password: "",
 };
+
 const windowDimensions = Dimensions.get("window").width;
 
 export default function LoginScreen({ navigation }) {
@@ -26,6 +29,8 @@ export default function LoginScreen({ navigation }) {
   const { email, password } = state;
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
   const [dimensions, setDimensions] = useState(windowDimensions);
+
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const onChange = () => {
@@ -48,12 +53,12 @@ export default function LoginScreen({ navigation }) {
     setIsShowKeyboard(true);
   };
 
-  const keyboardHideSubmitForm = () => {
+  const submitLoginForm = () => {
     setIsShowKeyboard(false);
     Keyboard.dismiss();
+
+    dispatch(signIn(state));
     setState(initialState);
-    console.log(state);
-    navigation.navigate("Home");
   };
 
   return (
@@ -102,10 +107,7 @@ export default function LoginScreen({ navigation }) {
                 />
               </View>
               <View style={{ display: isShowKeyboard ? "none" : "flex" }}>
-                <TouchableOpacity
-                  style={styles.btn}
-                  onPress={keyboardHideSubmitForm}
-                >
+                <TouchableOpacity style={styles.btn} onPress={submitLoginForm}>
                   <Text style={styles.btnTitle}>Войти</Text>
                 </TouchableOpacity>
                 <View style={styles.navigationContainer}>

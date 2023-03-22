@@ -28,7 +28,7 @@ const windowDimensions = Dimensions.get("window").width;
 
 export default function RegistrationScreen({ navigation }) {
   const [dimensions, setDimensions] = useState(windowDimensions);
-
+  const [isNotShownPassword, setIsNotShownPassword] = useState(true);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
   const [state, setState] = useState(initialState);
   const { login, email, password } = state;
@@ -109,39 +109,50 @@ export default function RegistrationScreen({ navigation }) {
                   placeholder="Адрес электронной почты"
                   onFocus={onFocus}
                 />
-
-                <TextInput
-                  style={{ ...styles.input, marginBottom: 0 }}
-                  onChangeText={(value) =>
-                    setState((prevState) => ({
-                      ...prevState,
-                      password: value,
-                    }))
-                  }
-                  value={password}
-                  placeholder="Пароль"
-                  secureTextEntry={true}
-                  onFocus={onFocus}
-                />
-              </View>
-              <View style={{ display: isShowKeyboard ? "none" : "flex" }}>
-                <TouchableOpacity
-                  style={styles.btn}
-                  onPress={submitRegisterForm}
-                >
-                  <Text style={styles.btnTitle}>Зарегистрироваться</Text>
-                </TouchableOpacity>
-                <View style={styles.navigationContainer}>
-                  <Text style={styles.bottomText}>Уже есть аккаунт? </Text>
+                <View style={{ position: "relative" }}>
+                  <TextInput
+                    style={{ ...styles.input, marginBottom: 0 }}
+                    onChangeText={(value) =>
+                      setState((prevState) => ({
+                        ...prevState,
+                        password: value,
+                      }))
+                    }
+                    value={password}
+                    placeholder="Пароль"
+                    secureTextEntry={isNotShownPassword}
+                    onFocus={onFocus}
+                  />
                   <TouchableOpacity
+                    style={styles.shownBtn}
                     onPress={() => {
-                      navigation.navigate("LoginScreen");
+                      setIsNotShownPassword((prevState) => !prevState);
                     }}
                   >
-                    <Text style={styles.bottomText}>Войти</Text>
+                    <Text style={styles.textBtnShown}>Показать</Text>
                   </TouchableOpacity>
                 </View>
               </View>
+              {!isShowKeyboard && (
+                <View>
+                  <TouchableOpacity
+                    style={styles.btn}
+                    onPress={submitRegisterForm}
+                  >
+                    <Text style={styles.btnTitle}>Зарегистрироваться</Text>
+                  </TouchableOpacity>
+                  <View style={styles.navigationContainer}>
+                    <Text style={styles.bottomText}>Уже есть аккаунт? </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        navigation.navigate("LoginScreen");
+                      }}
+                    >
+                      <Text style={styles.bottomText}>Войти</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
           </KeyboardAvoidingView>
         </ImageBackground>
@@ -208,6 +219,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     color: "#212121",
     fontSize: 16,
+  },
+  shownBtn: { position: "absolute", top: 15, right: 40 },
+  textBtnShown: {
+    color: "#1B4371",
+    fontFamily: "Roboto-Regular",
+    fontSize: 16,
+    lineHeight: 19,
   },
   btn: {
     backgroundColor: "#FF6C00",

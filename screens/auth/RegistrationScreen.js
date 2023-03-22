@@ -15,7 +15,7 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import image from "../../assets/register-bg.jpg";
-import { register } from "../../redux/auth/authOperation";
+import { register } from "../../redux/auth/authOperations";
 import { useDispatch } from "react-redux";
 
 const initialState = {

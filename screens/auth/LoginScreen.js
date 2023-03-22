@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import image from "../../assets/register-bg.jpg";
 import { useDispatch } from "react-redux";
-import { signIn } from "../../redux/auth/authOperation";
+import { signIn } from "../../redux/auth/authOperations";
 
 const initialState = {
   email: "",

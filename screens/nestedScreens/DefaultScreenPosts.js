@@ -9,51 +9,15 @@ import {
 } from "react-native";
 import { SimpleLineIcons, EvilIcons } from "@expo/vector-icons";
 import photo from "../../assets/photo.jpg";
-import { LogOut } from "../../redux/auth/authOperation";
-
-// function Item({ photo, location, name, comments, navigation }) {
-//   return (
-//     <View style={{ marginBottom: 34 }}>
-//       <Image style={styles.image} source={{ uri: photo }} />
-//       <Text style={{ ...styles.placeName, fontFamily: "Roboto-Medium" }}>
-//         {name}
-//       </Text>
-//       <View style={styles.locationCommentContainer}>
-//         <TouchableOpacity onPress={() => navigation.navigate("CommentsScreen")}>
-//           <View style={styles.commentContainer}>
-//             <EvilIcons
-//               style={styles.commentLogo}
-//               name="comment"
-//               size={24}
-//               color="black"
-//             />
-//             <Text style={styles.commentAmount}>{comments}</Text>
-//           </View>
-//         </TouchableOpacity>
-//         <TouchableOpacity onPress={() => navigation.navigate("MapScreen")}>
-//           <View style={styles.location}>
-//             <EvilIcons name="location" size={24} color="black" />
-//             <Text
-//               style={{
-//                 ...styles.locationText,
-//                 fontFamily: "Roboto-Regular",
-//               }}
-//             >
-//               {location}
-//             </Text>
-//           </View>
-//         </TouchableOpacity>
-//       </View>
-//     </View>
-//   );
-// }
+import { logOut } from "../../redux/auth/authOperations";
+import { useDispatch } from "react-redux";
 
 export default function DefaultScreenPosts({ route, navigation }) {
   const [posts, setPosts] = useState([]);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (route.params) {
-      console.log("rote", route.params.state);
       setPosts((prevState) => [...prevState, route.params.state]);
     }
   }, [route.params]);
@@ -64,11 +28,7 @@ export default function DefaultScreenPosts({ route, navigation }) {
     <View style={styles.container}>
       <View style={styles.topContainer}>
         <Text style={styles.textTop}>Публикации</Text>
-        <TouchableOpacity
-          onPress={() => {
-            LogOut();
-          }}
-        >
+        <TouchableOpacity onPress={() => dispatch(logOut())}>
           <SimpleLineIcons
             style={{ marginRight: 18 }}
             name="login"

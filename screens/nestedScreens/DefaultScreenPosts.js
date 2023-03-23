@@ -10,11 +10,15 @@ import {
 import { SimpleLineIcons, EvilIcons } from "@expo/vector-icons";
 import photo from "../../assets/photo.jpg";
 import { logOut } from "../../redux/auth/authOperations";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { selectAuth } from "../../redux/auth/authSelectors";
 
 export default function DefaultScreenPosts({ route, navigation }) {
+  const userAuth = useSelector(selectAuth);
   const [posts, setPosts] = useState([]);
   const dispatch = useDispatch();
+
+  console.log("userAuth", userAuth);
 
   useEffect(() => {
     if (route.params) {

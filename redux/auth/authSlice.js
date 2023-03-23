@@ -4,6 +4,7 @@ import { logOut, register, signIn } from "./authOperations";
 const initialState = {
   userId: "",
   userName: "",
+  userEmail: "",
 };
 
 const authSlice = createSlice({
@@ -11,19 +12,23 @@ const authSlice = createSlice({
   initialState,
   extraReducers: (builder) => {
     builder
-      .addCase(register.fulfilled, (state, { payload }) => {
-        console.log("register", payload);
+      .addCase(register.fulfilled, (state, action) => {
+        console.log("register", action);
         return {
           ...state,
-          userId: payload.uid,
-          userName: payload.displayName,
+          userId: action.payload.uid,
+          userName: action.payload.displayName,
+          userEmail: action.payload.email,
         };
       })
-      .addCase(signIn.fulfilled, (state, { payload }) => {
-        console.log("login", payload);
+      .addCase(signIn.fulfilled, (state, action) => {
+        console.log("login", action);
+        console.log(state);
         return {
           ...state,
-          userId: payload.uid,
+          userId: action.payload.uid,
+          userName: action.payload.displayName,
+          userEmail: action.payload.email,
         };
       })
       .addCase(logOut.fulfilled, (state) => {

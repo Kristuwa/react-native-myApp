@@ -11,7 +11,6 @@ import Toast from "react-native-root-toast";
 export const register = createAsyncThunk(
   "user/register",
   async (data, thunkAPI) => {
-    console.log("data register", data);
     try {
       const response = await createUserWithEmailAndPassword(
         authFirebase,
@@ -32,8 +31,10 @@ export const register = createAsyncThunk(
       });
 
       console.log("user register", displayName, uid);
-      const { user } = response;
-      return user;
+
+      const userUpdate = response.user;
+
+      return userUpdate;
     } catch (error) {
       thunkAPI.rejectWithValue(error.message);
       console.log(error.message);
@@ -50,7 +51,7 @@ export const signIn = createAsyncThunk(
         data.email,
         data.password
       );
-      const { user } = response.user;
+      const user = response.user;
       console.log("user login", user);
       Toast.show(`Выполнен вход ${user.email}`, {
         duration: 3000,

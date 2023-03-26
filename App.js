@@ -1,28 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import { NavigationContainer } from "@react-navigation/native";
-import { Provider, useSelector } from "react-redux";
-import useRoute from "./router";
+import { Provider } from "react-redux";
 import { store } from "./redux/store";
-import { authFirebase } from "./firebase/config";
-import { onAuthStateChanged } from "firebase/auth";
 import { RootSiblingParent } from "react-native-root-siblings";
+import Main from "./components/Main";
 
 export default function App() {
-  const [userAuth, setUser] = useState(null);
-
   const [fontsLoaded] = useFonts({
     "Roboto-Bold": require("./assets/Fonts/Roboto-Bold.ttf"),
     "Roboto-Medium": require("./assets/Fonts/Roboto-Medium.ttf"),
     "Roboto-Regular": require("./assets/Fonts/Roboto-Regular.ttf"),
   });
-
-  onAuthStateChanged(authFirebase, (user) => {
-    setUser(user);
-  });
-
-  const routing = useRoute(userAuth);
 
   useEffect(() => {
     async function prepare() {
@@ -40,7 +29,7 @@ export default function App() {
   return (
     <Provider store={store}>
       <RootSiblingParent>
-        <NavigationContainer>{routing}</NavigationContainer>
+        <Main />
       </RootSiblingParent>
     </Provider>
   );

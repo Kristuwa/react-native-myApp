@@ -4,76 +4,94 @@ import {
   signInWithEmailAndPassword,
   updateProfile,
   signOut,
+  onAuthStateChanged,
 } from "firebase/auth";
-import { createAsyncThunk } from "@reduxjs/toolkit";
 import Toast from "react-native-root-toast";
+import { authSlice } from "./authReducer";
 
-export const register = createAsyncThunk(
-  "user/register",
-  async (data, thunkAPI) => {
+const { authSignOut, updateUserProfile, authStateChange } = authSlice.actions;
+
+export const register =
+  ({ email, password, login }) =>
+  async (dispatch, getState) => {
     try {
       const response = await createUserWithEmailAndPassword(
         authFirebase,
-        data.email,
-        data.password
+        email,
+        password
       );
 
-      const { uid } = response.user;
-      console.log("response register", response);
+      const user = response.user;
+
       Toast.show("Вы успешно зарегистрировались", {
         duration: 3000,
         position: 50,
       });
 
-      thunkAPI.updateProfile(authFirebase.currentUser, {
-        displayName: data.login,
-        userId: uid,
+      await updateProfile(authFirebase.currentUser, {
+        displayName: login,
+        userId: user.uid,
       });
 
-      console.log("user register", displayName, uid);
+      const { displayName, uid } = await authFirebase.currentUser;
+      console.log("register", displayName, uid);
 
-      const userUpdate = response.user;
+      const userUpdateProfile = {
+        userName: displayName,
+        userId: uid,
+      };
 
-      return userUpdate;
+      dispatch(updateUserProfile(userUpdateProfile));
     } catch (error) {
-      thunkAPI.rejectWithValue(error.message);
-      console.log(error.message);
+      console.log("error.message", error.message);
     }
-  }
-);
+  };
 
-export const signIn = createAsyncThunk(
-  "user/signIn",
-  async (data, thunkAPI) => {
+export const signIn =
+  ({ email, password }) =>
+  async (dispatch, getState) => {
     try {
-      const response = await signInWithEmailAndPassword(
+      const user = await signInWithEmailAndPassword(
         authFirebase,
-        data.email,
-        data.password
+        email,
+        password
       );
-      const user = response.user;
-      console.log("user login", user);
-      Toast.show(`Выполнен вход ${user.email}`, {
+
+      Toast.show(`Выполнен вход!!`, {
         duration: 3000,
         position: 50,
       });
-
-      return user;
     } catch (error) {
-      thunkAPI.rejectWithValue(error.message);
+      console.log("error", error);
+      console.log("error.code", error.code);
+      console.log("error.message", error.message);
     }
-  }
-);
+  };
 
-export const logOut = createAsyncThunk("user/logOut", async () => {
+export const logOut = () => async (dispatch, getState) => {
   try {
     await signOut(authFirebase);
+    dispatch(authSignOut());
+
     Toast.show("Выполнен выход из аккаунта!", {
       duration: 3000,
       position: 50,
     });
-    return;
   } catch (error) {
-    thunkAPI.rejectWithValue(error.message);
+    console.log("error", error);
   }
-});
+};
+
+export const authStateChangeUser = () => async (dispatch, getState) => {
+  await onAuthStateChanged(authFirebase, (user) => {
+    if (user) {
+      const userUpdateProfile = {
+        userName: user.displayName,
+        userId: user.uid,
+      };
+
+      dispatch(authStateChange({ stateChange: true }));
+      dispatch(updateUserProfile(userUpdateProfile));
+    }
+  });
+};

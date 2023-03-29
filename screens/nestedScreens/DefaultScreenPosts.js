@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   View,
   Text,
@@ -10,23 +11,27 @@ import {
 import { SimpleLineIcons, EvilIcons } from "@expo/vector-icons";
 import photo from "../../assets/photo.jpg";
 import { logOut } from "../../redux/auth/authOperations";
-import { useDispatch, useSelector } from "react-redux";
 import { selectAuth } from "../../redux/auth/authSelectors";
+import { db } from "../../firebase/config";
+import { collection, getDocs } from "firebase/firestore";
 
 export default function DefaultScreenPosts({ route, navigation }) {
   const userAuth = useSelector(selectAuth);
   const [posts, setPosts] = useState([]);
   const dispatch = useDispatch();
 
-  console.log("userAuth", userAuth);
-
-  useEffect(() => {
-    if (route.params) {
-      setPosts((prevState) => [...prevState, route.params.state]);
-    }
-  }, [route.params]);
+  const getAllPosts = async () => {
+    const querySnapshot = await getDocs(collection(db, "posts"));
+    querySnapshot.forEach((doc) => {
+      setPosts((prevState) => [...prevState, { id: doc.id, ...doc.data() }]);
+    });
+  };
 
   console.log(posts);
+
+  useEffect(() => {
+    getAllPosts();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -60,7 +65,7 @@ export default function DefaultScreenPosts({ route, navigation }) {
                   <Text
                     style={{ ...styles.placeName, fontFamily: "Roboto-Medium" }}
                   >
-                    {item.name}
+                    {item.placeName}
                   </Text>
                   <View style={styles.locationCommentContainer}>
                     <TouchableOpacity
@@ -79,7 +84,11 @@ export default function DefaultScreenPosts({ route, navigation }) {
                       </View>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      onPress={() => navigation.navigate("MapScreen")}
+                      onPress={() =>
+                        navigation.navigate("MapScreen", {
+                          location: item.location,
+                        })
+                      }
                     >
                       <View style={styles.location}>
                         <EvilIcons name="location" size={24} color="black" />
@@ -89,7 +98,7 @@ export default function DefaultScreenPosts({ route, navigation }) {
                             fontFamily: "Roboto-Regular",
                           }}
                         >
-                          {item.location}
+                          {item.placeName}
                         </Text>
                       </View>
                     </TouchableOpacity>

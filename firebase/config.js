@@ -1,5 +1,5 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps } from "firebase/app";
+import { getApps, getApp, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -9,21 +9,18 @@ import { getStorage } from "firebase/storage";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyBqnq2Y55NK2XcueJPNl-vmZmeJ2_IOnis",
-  authDomain: "project-react-native-8f978.firebaseapp.com",
-  projectId: "project-react-native-8f978",
-  storageBucket: "project-react-native-8f978.appspot.com",
-  messagingSenderId: "883054287715",
-  appId: "1:883054287715:web:482c8e6faf9cde94c8d156",
-  measurementId: "G-2VX29DJ2PW",
+  apiKey: "AIzaSyCAB5hkIHa33qUMUKLsS4eQ4Ainwpn6N9E",
+  authDomain: "myprojectnative-db02a.firebaseapp.com",
+  projectId: "myprojectnative-db02a",
+  storageBucket: "myprojectnative-db02a.appspot.com",
+  messagingSenderId: "403708825853",
+  appId: "1:403708825853:web:62f9ccf4aa7274d0436e94",
+  measurementId: "G-QRMMFJT1ZP",
 };
 
-// Initialize Firebase
-if (!getApps().length) {
-  initializeApp(firebaseConfig);
-}
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Initialize Firebase Authentication and get a reference to the service
-export const authFirebase = getAuth(initializeApp(firebaseConfig));
-export const db = getFirestore(initializeApp(firebaseConfig));
-export const storage = getStorage(initializeApp(firebaseConfig));
+export const authFirebase = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useSelector } from "react-redux";
 import {
   View,
   Text,
@@ -13,14 +14,24 @@ import {
   Platform,
   Button,
 } from "react-native";
-import "react-native-get-random-values";
-import { AntDesign } from "@expo/vector-icons";
-import { MaterialIcons } from "@expo/vector-icons";
-import { Camera } from "expo-camera";
-import { v4 as uuidv4 } from "uuid";
+import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
+import { AntDesign, MaterialIcons } from "@expo/vector-icons";
+import { Camera } from "expo-camera";
+import Toast from "react-native-root-toast";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "../../firebase/config";
+import { selectAuth } from "../../redux/auth/authSelectors";
+import {
+  addDoc,
+  collection,
+  doc,
+  serverTimestamp,
+  setDoc,
+} from "@firebase/firestore";
 
 const initialState = {
+  placeName: "",
   location: "",
   name: "",
   photo: null,
@@ -32,32 +43,79 @@ export default function CreatePostsScreen({ navigation }) {
   const [hasPermission, setHasPermission] = useState(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
-  const [isPreview, setIsPreview] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [state, setState] = useState(initialState);
-  const { location, name, photo } = state;
+  const { location, name, photo, placeName } = state;
+  const { userId, userName } = useSelector(selectAuth);
   const cameraRef = useRef();
 
   useEffect(() => {
     (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === "granted");
+      if (Platform.OS !== "web") {
+        const { status } =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
+        setHasPermission(status === "granted");
+        if (status !== "granted") {
+          console.log(
+            "Sorry, we need camera roll permissions to make this work!"
+          );
+        }
+      }
     })();
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         setErrorMsg("Permission to access location was denied");
-        return;
       }
     })();
   }, []);
 
-  let locationText = "Waiting..";
-  if (errorMsg) {
-    locationText = errorMsg;
-  } else if (locationText) {
-    locationText = JSON.stringify(location);
-  }
+  const keyboardHide = () => {
+    setIsShowKeyboard(false);
+    Keyboard.dismiss();
+  };
+
+  const uploadPhotoToServer = async () => {
+    try {
+      const response = await fetch(state.photo);
+      const file = await response.blob();
+      const imgId = Date.now().toString();
+
+      const storageRef = ref(storage, `images/${imgId}`);
+      await uploadBytes(storageRef, file);
+
+      const urlRef = await getDownloadURL(storageRef);
+
+      return urlRef;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const uploadPostToServer = async () => {
+    try {
+      const uploadPhoto = await uploadPhotoToServer();
+
+      const collectionRef = doc(collection(db, "posts"));
+
+      await setDoc(collectionRef, {
+        photo: uploadPhoto,
+        location,
+        placeName: placeName,
+        comments: 0,
+        userId,
+        userName,
+        timestamp: serverTimestamp(),
+      });
+
+      Toast.show("Пост добавлен", {
+        duration: 3000,
+        position: 50,
+      });
+    } catch (error) {
+      console.log("upload post", error);
+    }
+  };
 
   const onCameraReady = () => {
     setIsCameraReady(true);
@@ -67,48 +125,51 @@ export default function CreatePostsScreen({ navigation }) {
     setIsShowKeyboard(true);
   };
 
-  const submitPublicForm = async () => {
-    setIsShowKeyboard(false);
-    Keyboard.dismiss();
-    let locationCoords = await Location.getCurrentPositionAsync({});
-    setState((prevState) => ({
-      ...prevState,
-      location: `${locationCoords.coords.latitude}, ${locationCoords.coords.longitude}`,
-    }));
-    navigation.navigate("DefaultScreenPosts", { state });
-    setState(initialState);
-    cancelPreview();
-  };
-
-  const keyboardHide = () => {
-    setIsShowKeyboard(false);
-    Keyboard.dismiss();
-  };
-
   const takePicture = async () => {
-    if (cameraRef.current) {
-      const options = { quality: 0.5, base64: true, skipProcessing: true };
-      const data = await cameraRef.current.takePictureAsync(options);
-      const source = data.uri;
-      if (source) {
-        await cameraRef.current.pausePreview();
-        setIsPreview(true);
+    const postId = Date.now().toString();
+
+    try {
+      let pickerResult = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+      });
+
+      if (!pickerResult.canceled) {
         setState((prevState) => ({
           ...prevState,
-          photo: source,
-          id: uuidv4(),
+          photo: pickerResult.assets[0].uri,
+          id: postId,
         }));
       }
+      let locationCoords = await Location.getCurrentPositionAsync({});
+      setState((prevState) => ({
+        ...prevState,
+        location: locationCoords.coords,
+      }));
+    } catch (error) {
+      console.log("take picture", error.message);
     }
   };
 
-  async function cancelPreview() {
-    await cameraRef.current.resumePreview();
-    setIsPreview(false);
-    setVideoSource(null);
-  }
+  const submitPublicForm = () => {
+    uploadPostToServer();
+    setIsShowKeyboard(false);
 
-  const createNewPost = location === "" || name === "" || photo === "";
+    Keyboard.dismiss();
+
+    navigation.navigate("DefaultScreenPosts");
+    setState(initialState);
+  };
+
+  const createNewPost =
+    name === "" || photo === "" || placeName === "" || location === "";
+
+  let locationText = "Waiting..";
+  if (errorMsg) {
+    locationText = errorMsg;
+  } else if (locationText) {
+    locationText = JSON.stringify(location);
+  }
 
   return (
     <TouchableWithoutFeedback onPress={keyboardHide}>
@@ -186,10 +247,10 @@ export default function CreatePostsScreen({ navigation }) {
               onChangeText={(value) =>
                 setState((prevState) => ({
                   ...prevState,
-                  location: value,
+                  placeName: value,
                 }))
               }
-              value={location}
+              value={placeName}
               placeholder="Местность..."
               onFocus={onFocus}
             />

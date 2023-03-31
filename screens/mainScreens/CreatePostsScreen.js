@@ -161,8 +161,8 @@ export default function CreatePostsScreen({ navigation }) {
     setState(initialState);
   };
 
-  const createNewPost =
-    name === "" || photo === "" || placeName === "" || location === "";
+  const createNewPost = name === "" || photo === "" || placeName === "";
+  //  || location === ""
 
   let locationText = "Waiting..";
   if (errorMsg) {

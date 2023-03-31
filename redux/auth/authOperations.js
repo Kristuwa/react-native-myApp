@@ -12,7 +12,7 @@ import { authSlice } from "./authReducer";
 const { authSignOut, updateUserProfile, authStateChange } = authSlice.actions;
 
 export const register =
-  ({ email, password, login }) =>
+  ({ email, password, login, avatar }) =>
   async (dispatch, getState) => {
     try {
       const response = await createUserWithEmailAndPassword(
@@ -31,14 +31,16 @@ export const register =
       await updateProfile(authFirebase.currentUser, {
         displayName: login,
         userId: user.uid,
+        photoURL: avatar,
       });
 
-      const { displayName, uid } = await authFirebase.currentUser;
-      console.log("register", displayName, uid);
+      const { displayName, uid, photoURL } = await authFirebase.currentUser;
 
       const userUpdateProfile = {
         userName: displayName,
         userId: uid,
+        userAvatar: photoURL,
+        userEmail: email,
       };
 
       dispatch(updateUserProfile(userUpdateProfile));
@@ -56,6 +58,17 @@ export const signIn =
         email,
         password
       );
+
+      const { displayName, uid, photoURL } = user.user;
+
+      const userUpdateProfile = {
+        userName: displayName,
+        userId: uid,
+        userAvatar: photoURL,
+        userEmail: email,
+      };
+
+      dispatch(updateUserProfile(userUpdateProfile));
 
       Toast.show(`Выполнен вход!!`, {
         duration: 3000,
@@ -82,12 +95,42 @@ export const logOut = () => async (dispatch, getState) => {
   }
 };
 
+export const deleteAvatar = () => async (dispatch, getState) => {
+  try {
+    await updateProfile(authFirebase.currentUser, {
+      displayName: login,
+      userId: user.uid,
+      photoURL: null,
+    });
+
+    const userUpdateProfile = {
+      userName: displayName,
+      userId: uid,
+      userAvatar: photoURL,
+      userEmail: email,
+    };
+
+    dispatch(updateUserProfile(userUpdateProfile));
+
+    Toast.show(`Аватар удален!!`, {
+      duration: 3000,
+      position: 50,
+    });
+  } catch (error) {
+    console.log("error", error);
+    console.log("error.code", error.code);
+    console.log("error.message", error.message);
+  }
+};
+
 export const authStateChangeUser = () => async (dispatch, getState) => {
   await onAuthStateChanged(authFirebase, (user) => {
     if (user) {
       const userUpdateProfile = {
         userName: user.displayName,
         userId: user.uid,
+        userAvatar: user.photoURL,
+        userEmail: user.email,
       };
 
       dispatch(authStateChange({ stateChange: true }));

@@ -7,16 +7,24 @@ import {
   Image,
   FlatList,
   TouchableOpacity,
+  SafeAreaView,
 } from "react-native";
 import { SimpleLineIcons, EvilIcons } from "@expo/vector-icons";
 import photo from "../../assets/photo.jpg";
 import { logOut } from "../../redux/auth/authOperations";
-import { selectAuth } from "../../redux/auth/authSelectors";
+import {
+  selectAuthEmail,
+  selectAvatar,
+  selectUserName,
+} from "../../redux/auth/authSelectors";
 import { db } from "../../firebase/config";
 import { collection, getDocs } from "firebase/firestore";
 
 export default function DefaultScreenPosts({ route, navigation }) {
-  const userAuth = useSelector(selectAuth);
+  const email = useSelector(selectAuthEmail);
+  const avatar = useSelector(selectAvatar);
+  const name = useSelector(selectUserName);
+
   const [posts, setPosts] = useState([]);
   const dispatch = useDispatch();
 
@@ -27,11 +35,11 @@ export default function DefaultScreenPosts({ route, navigation }) {
     });
   };
 
-  console.log(posts);
-
   useEffect(() => {
     getAllPosts();
   }, []);
+
+  console.log("posts", posts);
 
   return (
     <View style={styles.container}>
@@ -48,63 +56,77 @@ export default function DefaultScreenPosts({ route, navigation }) {
       </View>
       <View style={styles.mainContent}>
         <View style={styles.userContent}>
-          <Image style={styles.userAvatar} source={photo} />
+          {avatar ? (
+            <Image style={styles.userAvatar} source={{ uri: avatar }} />
+          ) : (
+            <Image style={styles.userAvatar} source={photo} />
+          )}
           <View style={styles.textContent}>
-            <Text style={styles.userName}>Natali Romanova</Text>
-            <Text style={styles.userEmail}>email@example.com</Text>
+            <Text style={styles.userName}>{name}</Text>
+            <Text style={styles.userEmail}>{email}</Text>
           </View>
         </View>
         {posts.length > 0 && (
-          <View>
+          <View style={{ flex: 1 }}>
             <FlatList
               data={posts}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <View style={{ marginBottom: 34 }}>
-                  <Image style={styles.image} source={{ uri: item.photo }} />
-                  <Text
-                    style={{ ...styles.placeName, fontFamily: "Roboto-Medium" }}
-                  >
-                    {item.placeName}
-                  </Text>
-                  <View style={styles.locationCommentContainer}>
-                    <TouchableOpacity
-                      onPress={() => navigation.navigate("CommentsScreen")}
+              renderItem={({ item }) => {
+                return (
+                  <View style={{ marginBottom: 34 }}>
+                    <Image style={styles.image} source={{ uri: item.photo }} />
+                    <Text
+                      style={{
+                        ...styles.placeName,
+                        fontFamily: "Roboto-Medium",
+                      }}
                     >
-                      <View style={styles.commentContainer}>
-                        <EvilIcons
-                          style={styles.commentLogo}
-                          name="comment"
-                          size={24}
-                          color="black"
-                        />
-                        <Text style={styles.commentAmount}>
-                          {item.comments}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() =>
-                        navigation.navigate("MapScreen", {
-                          location: item.location,
-                        })
-                      }
-                    >
-                      <View style={styles.location}>
-                        <EvilIcons name="location" size={24} color="black" />
-                        <Text
-                          style={{
-                            ...styles.locationText,
-                            fontFamily: "Roboto-Regular",
-                          }}
-                        >
-                          {item.placeName}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
+                      {item.placeName}
+                    </Text>
+                    <View style={styles.locationCommentContainer}>
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate("CommentsScreen", {
+                            postId: item.id,
+                            photo: item.photo,
+                          })
+                        }
+                      >
+                        <View style={styles.commentContainer}>
+                          <EvilIcons
+                            style={styles.commentLogo}
+                            name="comment"
+                            size={24}
+                            color="black"
+                          />
+                          <Text style={styles.commentAmount}>
+                            {item.comments}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate("MapScreen", {
+                            location: item.location,
+                          })
+                        }
+                      >
+                        <View style={styles.location}>
+                          <EvilIcons name="location" size={24} color="black" />
+                          <Text
+                            style={{
+                              ...styles.locationText,
+                              fontFamily: "Roboto-Regular",
+                            }}
+                          >
+                            {item.placeName}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-              )}
+                );
+              }}
             />
           </View>
         )}
@@ -142,7 +164,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   textContent: { paddingTop: 15 },
-  userAvatar: { width: 60, height: 60, marginRight: 8 },
+  userAvatar: { width: 60, height: 60, marginRight: 8, borderRadius: 4 },
   userName: {
     fontFamily: "Roboto-Bold",
     fontSize: 13,

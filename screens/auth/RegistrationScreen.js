@@ -13,15 +13,20 @@ import {
   Platform,
   Keyboard,
   KeyboardAvoidingView,
+  Image,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import image from "../../assets/register-bg.jpg";
 import { register } from "../../redux/auth/authOperations";
 import { useDispatch } from "react-redux";
+import { storage } from "../../firebase/config";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 const initialState = {
   login: "",
   email: "",
   password: "",
+  avatar: "",
 };
 
 const windowDimensions = Dimensions.get("window").width;
@@ -31,7 +36,7 @@ export default function RegistrationScreen({ navigation }) {
   const [isNotShownPassword, setIsNotShownPassword] = useState(true);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
   const [state, setState] = useState(initialState);
-  const { login, email, password } = state;
+  const { login, email, password, avatar } = state;
 
   const dispatch = useDispatch();
 
@@ -56,11 +61,49 @@ export default function RegistrationScreen({ navigation }) {
     setIsShowKeyboard(true);
   };
 
-  const submitRegisterForm = () => {
+  const uploadAvatarFromGallery = async () => {
+    try {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        setState((prevState) => ({
+          ...prevState,
+          avatar: result.assets[0].uri,
+        }));
+      }
+    } catch (error) {
+      console.log("Upload avatar error", error.message);
+    }
+  };
+
+  const uploadAvatarToServer = async () => {
+    try {
+      const response = await fetch(avatar);
+      const file = await response.blob();
+
+      const avatarId = Date.now().toString();
+
+      const storageRef = ref(storage, `avatars/${avatarId}`);
+      await uploadBytes(storageRef, file);
+
+      const avatarRef = await getDownloadURL(storageRef);
+
+      return avatarRef;
+    } catch (error) {
+      console.log("Upload avatar to server error", error.message);
+    }
+  };
+
+  const submitRegisterForm = async () => {
+    const avatarRef = await uploadAvatarToServer();
     setIsShowKeyboard(false);
     Keyboard.dismiss();
 
-    dispatch(register(state));
+    dispatch(register({ ...state, avatar: avatarRef }));
     setState(initialState);
   };
 
@@ -79,7 +122,17 @@ export default function RegistrationScreen({ navigation }) {
               }}
             >
               <View style={styles.userImage}>
-                <TouchableOpacity style={styles.btnAdd}>
+                {avatar && (
+                  <Image
+                    src={avatar}
+                    alt="Your avatar"
+                    style={{ width: "100%", height: "100%", borderRadius: 16 }}
+                  />
+                )}
+                <TouchableOpacity
+                  style={styles.btnAdd}
+                  onPress={uploadAvatarFromGallery}
+                >
                   <AntDesign name="pluscircleo" size={24} color={"#FF6C00"} />
                 </TouchableOpacity>
               </View>

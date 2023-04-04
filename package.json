@@ -35,7 +35,8 @@
     "react-native-web": "~0.18.10",
     "react-redux": "^8.0.5",
     "react-redux-firebase": "^3.11.0",
-    "redux-firestore": "^1.0.0"
+    "redux-firestore": "^1.0.0",
+    "expo-updates": "~0.16.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

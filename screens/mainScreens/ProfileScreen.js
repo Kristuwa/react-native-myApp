@@ -26,6 +26,8 @@ import { db } from "../../firebase/config";
 import { useState } from "react";
 import { useEffect } from "react";
 import { deleteAvatar, logOut } from "../../redux/auth/authOperations";
+import { storage } from "../../firebase/config";
+import { doc, deleteDoc } from "firebase/firestore";
 
 export default function ProfileScreen({ navigation }) {
   const [posts, setPosts] = useState([]);
@@ -33,7 +35,9 @@ export default function ProfileScreen({ navigation }) {
   const userName = useSelector(selectUserName);
   const avatar = useSelector(selectAvatar);
   const dispatch = useDispatch();
+
   const signOut = () => {
+    console.log("exit");
     dispatch(logOut());
   };
 
@@ -43,6 +47,11 @@ export default function ProfileScreen({ navigation }) {
     onSnapshot(searchQuery, (docSnap) =>
       setPosts(docSnap.docs.map((doc) => ({ ...doc.data(), id: doc.id })))
     );
+  };
+
+  const deleteAvatarFromUser = async () => {
+    console.log("delete");
+    dispatch(deleteAvatar());
   };
 
   useEffect(() => {
@@ -64,9 +73,7 @@ export default function ProfileScreen({ navigation }) {
               )}
               <TouchableOpacity
                 style={styles.deleteAvatarIcon}
-                onPress={() => {
-                  dispatch(deleteAvatar());
-                }}
+                onPress={deleteAvatarFromUser}
               >
                 <EvilIcons name="close" size={24} color="#BDBDBD" />
               </TouchableOpacity>
@@ -203,6 +210,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 80,
     left: 108,
+    zIndex: 5,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#fff",
@@ -213,7 +221,9 @@ const styles = StyleSheet.create({
     borderColor: "#BDBDBD",
   },
   logOutIcon: {
-    alignItems: "flex-end",
+    width: 24,
+    height: 24,
+    marginLeft: "auto",
     marginRight: 16,
     marginTop: 16,
   },

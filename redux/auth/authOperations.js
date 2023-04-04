@@ -81,32 +81,24 @@ export const signIn =
     }
   };
 
-export const logOut = () => async (dispatch, getState) => {
-  try {
-    await signOut(authFirebase);
-    dispatch(authSignOut());
-
-    Toast.show("Выполнен выход из аккаунта!", {
-      duration: 3000,
-      position: 50,
-    });
-  } catch (error) {
-    console.log("error", error);
-  }
-};
-
 export const deleteAvatar = () => async (dispatch, getState) => {
   try {
+    console.log(authFirebase.currentUser);
     await updateProfile(authFirebase.currentUser, {
-      displayName: login,
-      userId: user.uid,
+      displayName,
+      userId: uid,
       photoURL: null,
     });
+
+    const { displayName, uid, photoURL, email } =
+      await authFirebase.currentUser;
+
+    console.log("photo", photoURL);
 
     const userUpdateProfile = {
       userName: displayName,
       userId: uid,
-      userAvatar: photoURL,
+      userAvatar: null,
       userEmail: email,
     };
 
@@ -120,6 +112,20 @@ export const deleteAvatar = () => async (dispatch, getState) => {
     console.log("error", error);
     console.log("error.code", error.code);
     console.log("error.message", error.message);
+  }
+};
+
+export const logOut = () => async (dispatch, getState) => {
+  try {
+    await signOut(authFirebase);
+    dispatch(authSignOut());
+
+    Toast.show("Выполнен выход из аккаунта!", {
+      duration: 3000,
+      position: 50,
+    });
+  } catch (error) {
+    console.log("error", error);
   }
 };
 

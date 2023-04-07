@@ -11,6 +11,7 @@
   "dependencies": {
     "@expo/vector-icons": "^13.0.0",
     "@expo/webpack-config": "^18.0.1",
+    "@npmcli/fs": "^3.1.0",
     "@react-navigation/bottom-tabs": "^6.5.7",
     "@react-navigation/native": "^6.1.6",
     "@react-navigation/native-stack": "^6.9.12",
@@ -36,7 +37,8 @@
     "react-native-screens": "~3.20.0",
     "react-native-web": "~0.18.10",
     "react-redux": "^8.0.5",
-    "react-redux-firebase": "^3.11.0"
+    "react-redux-firebase": "^3.11.0",
+    "redux-firestore": "^1.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

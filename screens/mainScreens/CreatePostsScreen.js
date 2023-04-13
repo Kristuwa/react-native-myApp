@@ -48,24 +48,40 @@ export default function CreatePostsScreen({ navigation }) {
   const { location, name, photo, placeName } = state;
   const { userId, userName } = useSelector(selectAuth);
   const cameraRef = useRef();
+  const [load, setLoad] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     (async () => {
-      if (Platform.OS !== "web") {
-        const { status } =
-          await ImagePicker.requestMediaLibraryPermissionsAsync();
-        setHasPermission(status === "granted");
-        if (status !== "granted") {
-          console.log(
-            "Sorry, we need camera roll permissions to make this work!"
-          );
+      setLoad(true);
+      try {
+        if (Platform.OS !== "web") {
+          const { status } =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+          setHasPermission(status === "granted");
+          if (status !== "granted") {
+            console.log(
+              "Sorry, we need camera roll permissions to make this work!"
+            );
+          }
+          setLoad(false);
         }
+      } catch (error) {
+        setLoad(false);
+        setError(error.message);
       }
     })();
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setErrorMsg("Permission to access location was denied");
+      setLoad(true);
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          setErrorMsg("Permission to access location was denied");
+        }
+        setLoad(false);
+      } catch (error) {
+        setLoad(false);
+        setError(error.message);
       }
     })();
   }, []);
@@ -76,6 +92,7 @@ export default function CreatePostsScreen({ navigation }) {
   };
 
   const uploadPhotoToServer = async () => {
+    setLoad(true);
     try {
       const response = await fetch(state.photo);
       const file = await response.blob();
@@ -85,17 +102,19 @@ export default function CreatePostsScreen({ navigation }) {
       await uploadBytes(storageRef, file);
 
       const urlRef = await getDownloadURL(storageRef);
-
+      setLoad(false);
       return urlRef;
     } catch (error) {
       console.error(error);
+      setLoad(false);
+      setError(error.message);
     }
   };
 
   const uploadPostToServer = async () => {
+    setLoad(true);
     try {
       const uploadPhoto = await uploadPhotoToServer();
-
       const collectionRef = doc(collection(db, "posts"));
 
       await setDoc(collectionRef, {
@@ -112,8 +131,12 @@ export default function CreatePostsScreen({ navigation }) {
         duration: 3000,
         position: 50,
       });
+
+      setLoad(false);
     } catch (error) {
       console.log("upload post", error);
+      setLoad(false);
+      setError(`upload post ${error.message}`);
     }
   };
 
@@ -127,7 +150,7 @@ export default function CreatePostsScreen({ navigation }) {
 
   const takePicture = async () => {
     const postId = Date.now().toString();
-
+    setLoad(true);
     try {
       let pickerResult = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
@@ -146,8 +169,11 @@ export default function CreatePostsScreen({ navigation }) {
         ...prevState,
         location: locationCoords.coords,
       }));
+      setLoad(false);
     } catch (error) {
       console.log("take picture", error.message);
+      setLoad(false);
+      setLoad(`take picture ${error.message}`);
     }
   };
 
@@ -161,8 +187,8 @@ export default function CreatePostsScreen({ navigation }) {
     setState(initialState);
   };
 
-  const createNewPost = name === "" || photo === "" || placeName === "";
-  //  || location === ""
+  const createNewPost =
+    name === "" || photo === "" || placeName === "" || location === "";
 
   let locationText = "Waiting..";
   if (errorMsg) {
@@ -190,83 +216,116 @@ export default function CreatePostsScreen({ navigation }) {
 
           <Text style={styles.textTop}>Создать публикацию</Text>
         </View>
-        <View style={styles.mainContainer}>
-          <View>
-            {photo ? (
-              <View style={styles.addPhoto}>
-                <Image style={styles.imageBackground} source={{ uri: photo }} />
-                <TouchableOpacity
-                  style={styles.photoIcon}
-                  onPress={takePicture}
-                >
-                  <MaterialIcons
-                    name="photo-camera"
-                    size={24}
-                    color="#BDBDBD"
-                  />
-                </TouchableOpacity>
+        {!error && !load && (
+          <>
+            <View style={styles.mainContainer}>
+              <View>
+                {photo ? (
+                  <View style={styles.addPhoto}>
+                    <Image
+                      style={styles.imageBackground}
+                      source={{ uri: photo }}
+                    />
+                    <TouchableOpacity
+                      style={styles.photoIcon}
+                      onPress={takePicture}
+                    >
+                      <MaterialIcons
+                        name="photo-camera"
+                        size={24}
+                        color="#BDBDBD"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <Camera
+                    style={styles.addPhoto}
+                    ref={cameraRef}
+                    onCameraReady={onCameraReady}
+                  >
+                    <TouchableOpacity
+                      style={styles.photoIcon}
+                      onPress={takePicture}
+                    >
+                      <MaterialIcons
+                        name="photo-camera"
+                        size={24}
+                        color="#BDBDBD"
+                      />
+                    </TouchableOpacity>
+                  </Camera>
+                )}
               </View>
-            ) : (
-              <Camera
-                style={styles.addPhoto}
-                ref={cameraRef}
-                onCameraReady={onCameraReady}
-              >
-                <TouchableOpacity
-                  style={styles.photoIcon}
-                  onPress={takePicture}
-                >
-                  <MaterialIcons
-                    name="photo-camera"
-                    size={24}
-                    color="#BDBDBD"
-                  />
-                </TouchableOpacity>
-              </Camera>
-            )}
-          </View>
-          {photo ? (
-            <Text style={styles.textBottom}>Редактировать фото</Text>
-          ) : (
-            <Text style={styles.textBottom}>Загрузите фото</Text>
-          )}
-          <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              onChangeText={(value) =>
-                setState((prevState) => ({ ...prevState, name: value }))
-              }
-              value={name}
-              placeholder="Название..."
-              placeholderColor="#BDBDBD"
-              onFocus={onFocus}
-            />
+              {photo ? (
+                <Text style={styles.textBottom}>Редактировать фото</Text>
+              ) : (
+                <Text style={styles.textBottom}>Загрузите фото</Text>
+              )}
+              <View style={styles.form}>
+                <TextInput
+                  style={styles.input}
+                  onChangeText={(value) =>
+                    setState((prevState) => ({ ...prevState, name: value }))
+                  }
+                  value={name}
+                  placeholder="Название..."
+                  placeholderColor="#BDBDBD"
+                  onFocus={onFocus}
+                />
 
-            <TextInput
-              style={{ ...styles.input, marginBottom: 32 }}
-              onChangeText={(value) =>
-                setState((prevState) => ({
-                  ...prevState,
-                  placeName: value,
-                }))
-              }
-              value={placeName}
-              placeholder="Местность..."
-              onFocus={onFocus}
-            />
-          </View>
-          <TouchableOpacity
-            style={
-              createNewPost ? styles.btnAddScreen : styles.btnAddScreenActive
-            }
-            onPress={submitPublicForm}
-            disabled={createNewPost}
+                <TextInput
+                  style={{ ...styles.input, marginBottom: 32 }}
+                  onChangeText={(value) =>
+                    setState((prevState) => ({
+                      ...prevState,
+                      placeName: value,
+                    }))
+                  }
+                  value={placeName}
+                  placeholder="Местность..."
+                  onFocus={onFocus}
+                />
+              </View>
+              <TouchableOpacity
+                style={
+                  createNewPost
+                    ? styles.btnAddScreen
+                    : styles.btnAddScreenActive
+                }
+                onPress={submitPublicForm}
+                disabled={createNewPost}
+              >
+                <Text
+                  style={createNewPost ? styles.btnText : { color: "#ffffff" }}
+                >
+                  Опубликовать
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+        {load && (
+          <View
+            style={{
+              flex: 1,
+              alignContent: "center",
+              justifyContent: "center",
+            }}
           >
-            <Text style={createNewPost ? styles.btnText : { color: "#ffffff" }}>
-              Опубликовать
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <Text>Loading...</Text>
+          </View>
+        )}
+        {!load && error && (
+          <View
+            style={{
+              flex: 1,
+              alignContent: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text>{error}</Text>
+          </View>
+        )}
       </ScrollView>
     </TouchableWithoutFeedback>
   );

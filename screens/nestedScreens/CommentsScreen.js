@@ -10,6 +10,7 @@ import {
   TouchableWithoutFeedback,
   FlatList,
   SafeAreaView,
+  Text,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
@@ -38,6 +39,8 @@ export default function CommentsScreen({ route }) {
   const userName = useSelector(selectUserName);
   const avatar = useSelector(selectAvatar);
   const { postId, photo } = route.params;
+  const [load, setLoad] = useState(false);
+  const [error, setError] = useState(null);
 
   const keyboardHide = () => {
     Keyboard.dismiss();
@@ -55,6 +58,7 @@ export default function CommentsScreen({ route }) {
   const sendComment = async () => {
     const date = new Date().toLocaleDateString();
     const time = new Date().toLocaleTimeString();
+    setLoad(true);
 
     try {
       const dbRef = doc(db, "posts", postId);
@@ -68,21 +72,28 @@ export default function CommentsScreen({ route }) {
       };
       await updateDoc(dbRef, { comments: comments.length + 1 });
       await addDoc(collection(dbRef, "comments"), commentUploadObject);
+      setLoad(false);
     } catch (error) {
       console.log("SendComment Error", error.message);
+      setError(`SendComment Error ${error.message}`);
+      setLoad(false);
     }
   };
 
   const fetchComments = async () => {
+    setLoad(true);
     try {
       const dbRef = doc(db, "posts", postId);
       onSnapshot(collection(dbRef, "comments"), (docSnap) => {
         const allCommSnap = docSnap.docs;
         const allComm = allCommSnap.map((doc) => ({ ...doc.data() }));
         setComments(allComm);
+        setLoad(false);
       });
     } catch (error) {
       console.log("fetchComments Error", error.message);
+      setError(`fetchComments Error ${error.message}`);
+      setLoad(false);
     }
   };
 
@@ -97,34 +108,48 @@ export default function CommentsScreen({ route }) {
   return (
     <TouchableWithoutFeedback onPress={keyboardHide}>
       <View style={styles.container}>
-        <Image style={styles.image} source={{ uri: photo }} />
-        <View style={{ height: 250 }}>
-          <SafeAreaView style={{ flex: 1 }}>
-            <FlatList
-              data={comments}
-              keyExtractor={comments.id}
-              renderItem={renderItem}
-            />
-          </SafeAreaView>
-        </View>
+        {!error && !load && (
+          <>
+            <Image style={styles.image} source={{ uri: photo }} />
+            <View style={{ height: 250 }}>
+              <SafeAreaView style={{ flex: 1 }}>
+                <FlatList
+                  data={comments}
+                  keyExtractor={comments.id}
+                  renderItem={renderItem}
+                />
+              </SafeAreaView>
+            </View>
 
-        <View style={styles.formContainer}>
-          <View style={styles.commentForm}>
-            <TextInput
-              style={styles.input}
-              placeholder="Добавить комментарий..."
-              value={text}
-              onChangeText={setText}
-            />
-            <TouchableOpacity style={styles.sendBtn} onPress={createPost}>
-              <MaterialCommunityIcons
-                name="send-circle"
-                size={38}
-                color="#FF6C00"
-              />
-            </TouchableOpacity>
+            <View style={styles.formContainer}>
+              <View style={styles.commentForm}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Добавить комментарий..."
+                  value={text}
+                  onChangeText={setText}
+                />
+                <TouchableOpacity style={styles.sendBtn} onPress={createPost}>
+                  <MaterialCommunityIcons
+                    name="send-circle"
+                    size={38}
+                    color="#FF6C00"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </>
+        )}
+        {load && (
+          <View style={{flex: 1, alignContent: "center", justifyContent: "center" }}>
+            <Text>Loading...</Text>
           </View>
-        </View>
+        )}
+        {!load && error && (
+          <View style={{flex: 1, alignContent: "center", justifyContent: "center" }}>
+            <Text>{error}</Text>
+          </View>
+        )}
       </View>
     </TouchableWithoutFeedback>
   );

@@ -37,8 +37,32 @@ export default function RegistrationScreen({ navigation }) {
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
   const [state, setState] = useState(initialState);
   const { login, email, password, avatar } = state;
+  const [load, setLoad] = useState(false);
+  const [error, setError] = useState(null);
 
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    (async () => {
+      setLoad(true);
+      try {
+        if (Platform.OS !== "web") {
+          const { status } =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+          setHasPermission(status === "granted");
+          if (status !== "granted") {
+            console.log(
+              "Sorry, we need camera roll permissions to make this work!"
+            );
+          }
+          setLoad(false);
+        }
+      } catch (error) {
+        setLoad(false);
+        setError(error.message);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     const onChange = () => {
@@ -62,6 +86,7 @@ export default function RegistrationScreen({ navigation }) {
   };
 
   const uploadAvatarFromGallery = async () => {
+    setLoad(true);
     try {
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.All,
@@ -75,12 +100,16 @@ export default function RegistrationScreen({ navigation }) {
           avatar: result.assets[0].uri,
         }));
       }
+      setLoad(false);
     } catch (error) {
       console.log("Upload avatar error", error.message);
+      setLoad(false);
+      setError(`Upload avatar error ${error.message}`);
     }
   };
 
   const uploadAvatarToServer = async () => {
+    setLoad(true);
     try {
       const response = await fetch(avatar);
       const file = await response.blob();
@@ -91,126 +120,177 @@ export default function RegistrationScreen({ navigation }) {
       await uploadBytes(storageRef, file);
 
       const avatarRef = await getDownloadURL(storageRef);
-
+      setLoad(false);
       return avatarRef;
     } catch (error) {
       console.log("Upload avatar to server error", error.message);
+      setLoad(false);
+      setError(`Upload avatar to server error ${error.message}`);
     }
   };
 
   const submitRegisterForm = async () => {
-    const avatarRef = await uploadAvatarToServer();
-    setIsShowKeyboard(false);
-    Keyboard.dismiss();
+    setLoad(true);
+    try {
+      const avatarRef = await uploadAvatarToServer();
+      setIsShowKeyboard(false);
+      Keyboard.dismiss();
 
-    dispatch(register({ ...state, avatar: avatarRef }));
-    setState(initialState);
+      dispatch(register({ ...state, avatar: avatarRef }));
+      setState(initialState);
+      setLoad(false);
+    } catch (error) {
+      console.log("Upload avatar to server error", error.message);
+      setLoad(false);
+      setError(`Upload avatar to server error ${error.message}`);
+    }
   };
 
   return (
     <TouchableWithoutFeedback onPress={keyboardHide}>
       <View style={{ ...styles.container, width: dimensions }}>
-        <ImageBackground source={image} style={styles.image}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS == "ios" ? "padding" : "height"}
-            keyboardVerticalOffset={-100}
-          >
-            <View
-              style={{
-                ...styles.form,
-                paddingBottom: isShowKeyboard ? 0 : 66,
-              }}
-            >
-              <View style={styles.userImage}>
-                {avatar && (
-                  <Image
-                    src={avatar}
-                    alt="Your avatar"
-                    style={{ width: "100%", height: "100%", borderRadius: 16 }}
-                  />
-                )}
-                <TouchableOpacity
-                  style={styles.btnAdd}
-                  onPress={uploadAvatarFromGallery}
-                >
-                  <AntDesign name="pluscircleo" size={24} color={"#FF6C00"} />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.title}>Регистрация</Text>
-
-              <View
-                style={{
-                  ...styles.formContainer,
-                  marginBottom: isShowKeyboard ? 32 : 43,
-                }}
+        {!error && !load && (
+          <>
+            <ImageBackground source={image} style={styles.image}>
+              <KeyboardAvoidingView
+                behavior={Platform.OS == "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={-100}
               >
-                <TextInput
-                  style={styles.input}
-                  onChangeText={(value) =>
-                    setState((prevState) => ({ ...prevState, login: value }))
-                  }
-                  value={login}
-                  placeholder="Логин"
-                  onFocus={onFocus}
-                />
-                <TextInput
-                  style={styles.input}
-                  onChangeText={(value) =>
-                    setState((prevState) => ({ ...prevState, email: value }))
-                  }
-                  value={email}
-                  placeholder="Адрес электронной почты"
-                  onFocus={onFocus}
-                />
-                <View style={{ position: "relative" }}>
-                  <TextInput
-                    style={{ ...styles.input, marginBottom: 0 }}
-                    onChangeText={(value) =>
-                      setState((prevState) => ({
-                        ...prevState,
-                        password: value,
-                      }))
-                    }
-                    value={password}
-                    placeholder="Пароль"
-                    secureTextEntry={isNotShownPassword}
-                    onFocus={onFocus}
-                  />
-                  <TouchableOpacity
-                    style={styles.shownBtn}
-                    onPress={() => {
-                      setIsNotShownPassword((prevState) => !prevState);
-                    }}
-                  >
-                    <Text style={styles.textBtnShown}>Показать</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              {!isShowKeyboard && (
-                <View>
-                  <TouchableOpacity
-                    style={styles.btn}
-                    onPress={submitRegisterForm}
-                  >
-                    <Text style={styles.btnTitle}>Зарегистрироваться</Text>
-                  </TouchableOpacity>
-                  <View style={styles.navigationContainer}>
-                    <Text style={styles.bottomText}>Уже есть аккаунт? </Text>
+                <View
+                  style={{
+                    ...styles.form,
+                    paddingBottom: isShowKeyboard ? 0 : 66,
+                  }}
+                >
+                  <View style={styles.userImage}>
+                    {avatar && (
+                      <Image
+                        src={avatar}
+                        alt="Your avatar"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          borderRadius: 16,
+                        }}
+                      />
+                    )}
                     <TouchableOpacity
-                      onPress={() => {
-                        navigation.navigate("LoginScreen");
-                      }}
+                      style={styles.btnAdd}
+                      onPress={uploadAvatarFromGallery}
                     >
-                      <Text style={styles.bottomText}>Войти</Text>
+                      <AntDesign
+                        name="pluscircleo"
+                        size={24}
+                        color={"#FF6C00"}
+                      />
                     </TouchableOpacity>
                   </View>
-                </View>
-              )}
-            </View>
-          </KeyboardAvoidingView>
-        </ImageBackground>
+                  <Text style={styles.title}>Регистрация</Text>
 
-        <StatusBar style="auto" />
+                  <View
+                    style={{
+                      ...styles.formContainer,
+                      marginBottom: isShowKeyboard ? 32 : 43,
+                    }}
+                  >
+                    <TextInput
+                      style={styles.input}
+                      onChangeText={(value) =>
+                        setState((prevState) => ({
+                          ...prevState,
+                          login: value,
+                        }))
+                      }
+                      value={login}
+                      placeholder="Логин"
+                      onFocus={onFocus}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      onChangeText={(value) =>
+                        setState((prevState) => ({
+                          ...prevState,
+                          email: value,
+                        }))
+                      }
+                      value={email}
+                      placeholder="Адрес электронной почты"
+                      onFocus={onFocus}
+                    />
+                    <View style={{ position: "relative" }}>
+                      <TextInput
+                        style={{ ...styles.input, marginBottom: 0 }}
+                        onChangeText={(value) =>
+                          setState((prevState) => ({
+                            ...prevState,
+                            password: value,
+                          }))
+                        }
+                        value={password}
+                        placeholder="Пароль"
+                        secureTextEntry={isNotShownPassword}
+                        onFocus={onFocus}
+                      />
+                      <TouchableOpacity
+                        style={styles.shownBtn}
+                        onPress={() => {
+                          setIsNotShownPassword((prevState) => !prevState);
+                        }}
+                      >
+                        <Text style={styles.textBtnShown}>Показать</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  {!isShowKeyboard && (
+                    <View>
+                      <TouchableOpacity
+                        style={styles.btn}
+                        onPress={submitRegisterForm}
+                      >
+                        <Text style={styles.btnTitle}>Зарегистрироваться</Text>
+                      </TouchableOpacity>
+                      <View style={styles.navigationContainer}>
+                        <Text style={styles.bottomText}>
+                          Уже есть аккаунт?{" "}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            navigation.navigate("LoginScreen");
+                          }}
+                        >
+                          <Text style={styles.bottomText}>Войти</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </KeyboardAvoidingView>
+            </ImageBackground>
+            <StatusBar style="auto" />
+          </>
+        )}
+        {load && (
+          <View
+            style={{
+              flex: 1,
+              alignContent: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text>Loading...</Text>
+          </View>
+        )}
+        {!load && error && (
+          <View
+            style={{
+              flex: 1,
+              alignContent: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text>{error}</Text>
+          </View>
+        )}
       </View>
     </TouchableWithoutFeedback>
   );

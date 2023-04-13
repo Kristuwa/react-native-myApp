@@ -24,113 +24,145 @@ export default function DefaultScreenPosts({ route, navigation }) {
   const email = useSelector(selectAuthEmail);
   const avatar = useSelector(selectAvatar);
   const name = useSelector(selectUserName);
+  const [load, setLoad] = useState(false);
+  const [error, setError] = useState(null);
 
   const [posts, setPosts] = useState([]);
   const dispatch = useDispatch();
 
   const getAllPosts = async () => {
-    const querySnapshot = await getDocs(collection(db, "posts"));
-    querySnapshot.forEach((doc) => {
-      setPosts((prevState) => [...prevState, { id: doc.id, ...doc.data() }]);
-    });
+    setLoad(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, "posts"));
+      querySnapshot.forEach((doc) => {
+        setPosts((prevState) => [...prevState, { id: doc.id, ...doc.data() }]);
+      });
+      setLoad(false);
+    } catch (error) {
+      setLoad(false);
+      setError(error.message);
+    }
   };
 
   useEffect(() => {
     getAllPosts();
   }, []);
 
-  console.log("posts", posts);
-
   return (
     <View style={styles.container}>
-      <View style={styles.topContainer}>
-        <Text style={styles.textTop}>Публикации</Text>
-        <TouchableOpacity onPress={() => dispatch(logOut())}>
-          <SimpleLineIcons
-            style={{ marginRight: 18 }}
-            name="login"
-            size={24}
-            color="#BDBDBD"
-          />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.mainContent}>
-        <View style={styles.userContent}>
-          {avatar ? (
-            <Image style={styles.userAvatar} source={{ uri: avatar }} />
-          ) : (
-            <Image style={styles.userAvatar} source={photo} />
-          )}
-          <View style={styles.textContent}>
-            <Text style={styles.userName}>{name}</Text>
-            <Text style={styles.userEmail}>{email}</Text>
+      {!error && !load && (
+        <>
+          <View style={styles.topContainer}>
+            <Text style={styles.textTop}>Публикации</Text>
+            <TouchableOpacity onPress={() => dispatch(logOut())}>
+              <SimpleLineIcons
+                style={{ marginRight: 18 }}
+                name="login"
+                size={24}
+                color="#BDBDBD"
+              />
+            </TouchableOpacity>
           </View>
-        </View>
-        {posts.length > 0 && (
-          <View style={{ flex: 1 }}>
-            <FlatList
-              data={posts}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => {
-                return (
-                  <View style={{ marginBottom: 34 }}>
-                    <Image style={styles.image} source={{ uri: item.photo }} />
-                    <Text
-                      style={{
-                        ...styles.placeName,
-                        fontFamily: "Roboto-Medium",
-                      }}
-                    >
-                      {item.placeName}
-                    </Text>
-                    <View style={styles.locationCommentContainer}>
-                      <TouchableOpacity
-                        onPress={() =>
-                          navigation.navigate("CommentsScreen", {
-                            postId: item.id,
-                            photo: item.photo,
-                          })
-                        }
-                      >
-                        <View style={styles.commentContainer}>
-                          <EvilIcons
-                            style={styles.commentLogo}
-                            name="comment"
-                            size={24}
-                            color="black"
-                          />
-                          <Text style={styles.commentAmount}>
-                            {item.comments}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() =>
-                          navigation.navigate("MapScreen", {
-                            location: item.location,
-                          })
-                        }
-                      >
-                        <View style={styles.location}>
-                          <EvilIcons name="location" size={24} color="black" />
-                          <Text
-                            style={{
-                              ...styles.locationText,
-                              fontFamily: "Roboto-Regular",
-                            }}
+          <View style={styles.mainContent}>
+            <View style={styles.userContent}>
+              {avatar ? (
+                <Image style={styles.userAvatar} source={{ uri: avatar }} />
+              ) : (
+                <Image style={styles.userAvatar} source={photo} />
+              )}
+              <View style={styles.textContent}>
+                <Text style={styles.userName}>{name}</Text>
+                <Text style={styles.userEmail}>{email}</Text>
+              </View>
+            </View>
+            {posts.length > 0 && (
+              <View style={{ flex: 1 }}>
+                <FlatList
+                  data={posts}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item }) => {
+                    return (
+                      <View style={{ marginBottom: 34 }}>
+                        <Image
+                          style={styles.image}
+                          source={{ uri: item.photo }}
+                        />
+                        <Text
+                          style={{
+                            ...styles.placeName,
+                            fontFamily: "Roboto-Medium",
+                          }}
+                        >
+                          {item.placeName}
+                        </Text>
+                        <View style={styles.locationCommentContainer}>
+                          <TouchableOpacity
+                            onPress={() =>
+                              navigation.navigate("CommentsScreen", {
+                                postId: item.id,
+                                photo: item.photo,
+                              })
+                            }
                           >
-                            {item.placeName}
-                          </Text>
+                            <View style={styles.commentContainer}>
+                              <EvilIcons
+                                style={styles.commentLogo}
+                                name="comment"
+                                size={24}
+                                color="black"
+                              />
+                              <Text style={styles.commentAmount}>
+                                {item.comments}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() =>
+                              navigation.navigate("MapScreen", {
+                                location: item.location,
+                              })
+                            }
+                          >
+                            <View style={styles.location}>
+                              <EvilIcons
+                                name="location"
+                                size={24}
+                                color="black"
+                              />
+                              <Text
+                                style={{
+                                  ...styles.locationText,
+                                  fontFamily: "Roboto-Regular",
+                                }}
+                              >
+                                {item.placeName}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
                         </View>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                );
-              }}
-            />
+                      </View>
+                    );
+                  }}
+                />
+              </View>
+            )}
           </View>
-        )}
-      </View>
+        </>
+      )}
+      {load && (
+        <View
+          style={{ flex: 1, alignContent: "center", justifyContent: "center" }}
+        >
+          <Text>Loading...</Text>
+        </View>
+      )}
+      {!load && error && (
+        <View
+          style={{ flex: 1, alignContent: "center", justifyContent: "center" }}
+        >
+          <Text>{error}</Text>
+        </View>
+      )}
     </View>
   );
 }

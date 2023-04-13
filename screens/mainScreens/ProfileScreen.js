@@ -50,7 +50,6 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const deleteAvatarFromUser = async () => {
-    console.log("delete");
     dispatch(deleteAvatar());
   };
 

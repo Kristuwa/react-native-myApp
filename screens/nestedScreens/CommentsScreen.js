@@ -114,7 +114,6 @@ export default function CommentsScreen({ route }) {
               style={styles.input}
               placeholder="Добавить комментарий..."
               value={text}
-              onFocus={() => setIsShowKeyboard(true)}
               onChangeText={setText}
             />
             <TouchableOpacity style={styles.sendBtn} onPress={createPost}>

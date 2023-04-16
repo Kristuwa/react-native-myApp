@@ -14,8 +14,9 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import image from "../../assets/register-bg.jpg";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { signIn } from "../../redux/auth/authOperations";
+import { selectError, selectIsLoading } from "../../redux/auth/authSelectors";
 
 const initialState = {
   email: "",
@@ -30,6 +31,8 @@ export default function LoginScreen({ navigation }) {
   const [isNotShownPassword, setIsNotShownPassword] = useState(true);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
   const [dimensions, setDimensions] = useState(windowDimensions);
+  const isLoading = useSelector(selectIsLoading);
+  const error = useSelector(selectError);
 
   const dispatch = useDispatch();
 
@@ -65,82 +68,110 @@ export default function LoginScreen({ navigation }) {
   return (
     <TouchableWithoutFeedback onPress={keyboardHide}>
       <View style={{ ...styles.container, width: dimensions }}>
-        <ImageBackground source={image} style={styles.image}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS == "ios" ? "padding" : "height"}
-            keyboardVerticalOffset={-100}
-          >
-            <View
-              style={{
-                ...styles.form,
-                paddingBottom: isShowKeyboard ? 0 : 132,
-              }}
-            >
-              <Text style={styles.title}>Войти</Text>
-              <View
-                style={{
-                  ...styles.formContainer,
-                  marginBottom: isShowKeyboard ? 32 : 43,
-                }}
+        {!error && !isLoading && (
+          <>
+            <ImageBackground source={image} style={styles.image}>
+              <KeyboardAvoidingView
+                behavior={Platform.OS == "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={-100}
               >
-                <TextInput
-                  style={styles.input}
-                  onChangeText={(value) =>
-                    setState((prevState) => ({ ...prevState, email: value }))
-                  }
-                  value={email}
-                  placeholder="Адрес электронной почты"
-                  onFocus={onFocus}
-                />
-                <View style={{ position: "relative" }}>
-                  <TextInput
-                    style={{ ...styles.input, marginBottom: 0 }}
-                    onChangeText={(value) =>
-                      setState((prevState) => ({
-                        ...prevState,
-                        password: value,
-                      }))
-                    }
-                    value={password}
-                    placeholder="Пароль"
-                    secureTextEntry={isNotShownPassword}
-                    onFocus={onFocus}
-                  />
-                  <TouchableOpacity
-                    style={styles.shownBtn}
-                    onPress={() => {
-                      setIsNotShownPassword((prevState) => !prevState);
+                <View
+                  style={{
+                    ...styles.form,
+                    paddingBottom: isShowKeyboard ? 0 : 132,
+                  }}
+                >
+                  <Text style={styles.title}>Войти</Text>
+                  <View
+                    style={{
+                      ...styles.formContainer,
+                      marginBottom: isShowKeyboard ? 32 : 43,
                     }}
                   >
-                    <Text style={styles.textBtnShown}>Показать</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              {!isShowKeyboard && (
-                <View>
-                  <TouchableOpacity
-                    style={styles.btn}
-                    onPress={submitLoginForm}
-                  >
-                    <Text style={styles.btnTitle}>Войти</Text>
-                  </TouchableOpacity>
-                  <View style={styles.navigationContainer}>
-                    <Text style={styles.bottomText}>Нет аккаунта? </Text>
-                    <TouchableOpacity
-                      onPress={() => {
-                        navigation.navigate("RegistrationScreen");
-                      }}
-                    >
-                      <Text style={styles.bottomText}>Зарегистрироваться</Text>
-                    </TouchableOpacity>
+                    <TextInput
+                      style={styles.input}
+                      onChangeText={(value) =>
+                        setState((prevState) => ({
+                          ...prevState,
+                          email: value,
+                        }))
+                      }
+                      value={email}
+                      placeholder="Адрес электронной почты"
+                      onFocus={onFocus}
+                    />
+                    <View style={{ position: "relative" }}>
+                      <TextInput
+                        style={{ ...styles.input, marginBottom: 0 }}
+                        onChangeText={(value) =>
+                          setState((prevState) => ({
+                            ...prevState,
+                            password: value,
+                          }))
+                        }
+                        value={password}
+                        placeholder="Пароль"
+                        secureTextEntry={isNotShownPassword}
+                        onFocus={onFocus}
+                      />
+                      <TouchableOpacity
+                        style={styles.shownBtn}
+                        onPress={() => {
+                          setIsNotShownPassword((prevState) => !prevState);
+                        }}
+                      >
+                        <Text style={styles.textBtnShown}>Показать</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
+                  {!isShowKeyboard && (
+                    <View>
+                      <TouchableOpacity
+                        style={styles.btn}
+                        onPress={submitLoginForm}
+                      >
+                        <Text style={styles.btnTitle}>Войти</Text>
+                      </TouchableOpacity>
+                      <View style={styles.navigationContainer}>
+                        <Text style={styles.bottomText}>Нет аккаунта? </Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            navigation.navigate("RegistrationScreen");
+                          }}
+                        >
+                          <Text style={styles.bottomText}>
+                            Зарегистрироваться
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
                 </View>
-              )}
-            </View>
-          </KeyboardAvoidingView>
-        </ImageBackground>
-
-        <StatusBar style="auto" />
+              </KeyboardAvoidingView>
+            </ImageBackground>
+            <StatusBar style="auto" />
+          </>
+        )}
+        {isLoading && (
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+            }}
+          >
+            <Text>Loading...</Text>
+          </View>
+        )}
+        {!isLoading && error && (
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+            }}
+          >
+            <Text>{error}</Text>
+          </View>
+        )}
       </View>
     </TouchableWithoutFeedback>
   );
